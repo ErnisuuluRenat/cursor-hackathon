@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: summer-adventures-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/leaderboard/
+    envVars:
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: ANTHROPIC_API_KEY
+        sync: false

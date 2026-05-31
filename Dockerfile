@@ -24,5 +24,5 @@ COPY manage.py .
 # Expose Django port
 EXPOSE 8000
 
-# Create DB, seed players, then start server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py seed && python manage.py runserver 0.0.0.0:8000"]
+# Create DB, seed players, then start server (PORT is set by Render)
+CMD ["sh", "-c", "python manage.py migrate && python manage.py seed && python manage.py runserver 0.0.0.0:${PORT:-8000}"]

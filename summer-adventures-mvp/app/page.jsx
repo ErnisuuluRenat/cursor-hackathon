@@ -105,7 +105,7 @@ export default function Home() {
 
         const data = await response.json();
         setRoom({ activity, members: selectedMembers });
-        setPlan(data);
+        setPlan(data.plan ?? data);
         setEventScreen("plan");
       }
     } catch (err) {
@@ -139,7 +139,8 @@ export default function Home() {
         }
 
         const data = await response.json();
-        setVerdict(data);
+        const verdictData = data.verdict ?? data;
+        setVerdict(verdictData);
         setEventScreen("verdict");
         
         // Auto-update stats and post score
@@ -148,7 +149,7 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             playerId: 1,
-            coolnessScore: data.coolnessScore ?? 60
+            coolnessScore: verdictData.coolnessScore ?? 60
           })
         });
 
