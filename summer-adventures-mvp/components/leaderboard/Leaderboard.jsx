@@ -1,4 +1,63 @@
+"use client";
+
+import { useState } from "react";
+
+function isImageUrl(value) {
+  if (!value || typeof value !== "string") return false;
+  return (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/")
+  );
+}
+
+function PlayerAvatar({ player }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const emojiOrLetter =
+    player.avatar && !isImageUrl(player.avatar)
+      ? player.avatar
+      : (player.name?.charAt(0)?.toUpperCase() ?? "?");
+
+  const circleStyle = {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    background: "var(--primary)",
+    color: "#ffffff",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: isImageUrl(player.avatar) ? "0.875rem" : "1.125rem",
+    fontWeight: 700,
+    flexShrink: 0,
+    overflow: "hidden",
+  };
+
+  if (isImageUrl(player.avatar) && !imageFailed) {
+    return (
+      <img
+        src={player.avatar}
+        alt=""
+        width={32}
+        height={32}
+        onError={() => setImageFailed(true)}
+        style={{
+          borderRadius: "50%",
+          objectFit: "cover",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+
+  return <span style={circleStyle}>{emojiOrLetter}</span>;
+}
+
 export default function Leaderboard({ players = [] }) {
+  const sortedPlayers = [...players].sort(
+    (a, b) => (b.elo ?? 0) - (a.elo ?? 0)
+  );
+
   return (
     <div className="app-container">
       <h1>Leaderboard</h1>
@@ -20,12 +79,16 @@ export default function Leaderboard({ players = [] }) {
             </tr>
           </thead>
           <tbody>
-            {players.map((player, index) => (
+            {sortedPlayers.map((player, index) => (
               <tr
                 key={player.id ?? player.name ?? index}
                 style={{
-                  background: index === 0 ? "color-mix(in srgb, var(--secondary) 20%, white)" : "transparent",
-                  borderBottom: "1px solid color-mix(in srgb, var(--text) 10%, transparent)",
+                  background:
+                    index === 0
+                      ? "color-mix(in srgb, var(--secondary) 20%, white)"
+                      : "transparent",
+                  borderBottom:
+                    "1px solid color-mix(in srgb, var(--text) 10%, transparent)",
                 }}
               >
                 <td style={{ ...cellStyle, fontWeight: 700 }}>{index + 1}</td>
@@ -37,48 +100,22 @@ export default function Leaderboard({ players = [] }) {
                       gap: "0.5rem",
                     }}
                   >
-                    {player.avatar ? (
-                      <img
-                        src={player.avatar}
-                        alt=""
-                        width={32}
-                        height={32}
-                        style={{
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          flexShrink: 0,
-                        }}
-                      />
-                    ) : (
-                      <span
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: "50%",
-                          background: "var(--primary)",
-                          color: "#ffffff",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.875rem",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {player.name?.charAt(0)?.toUpperCase() ?? "?"}
-                      </span>
-                    )}
-                    <span style={{ fontWeight: index === 0 ? 700 : 400 }}>{player.name}</span>
+                    <PlayerAvatar player={player} />
+                    <span style={{ fontWeight: index === 0 ? 700 : 400 }}>
+                      {player.name}
+                    </span>
                   </span>
                 </td>
-                <td style={cellStyle}>{player.elo}</td>
-                <td style={cellStyle}>{player.adventures ?? player.completedTrips ?? 0}</td>
+                <td style={cellStyle}>{Math.round(player.elo ?? 0)}</td>
+                <td style={cellStyle}>
+                  {player.adventures ?? player.completedTrips ?? 0}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {players.length === 0 && (
+        {sortedPlayers.length === 0 && (
           <p style={{ textAlign: "center", marginTop: "1rem", marginBottom: 0 }}>
             No players yet.
           </p>

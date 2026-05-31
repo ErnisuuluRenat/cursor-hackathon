@@ -82,19 +82,26 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/leaderboard/`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(Array.isArray(data) ? data : (data.players ?? []));
+      }
+    } catch (err) {
+      console.error("Failed to load leaderboard", err);
+    }
+  };
+
   // Auto-fetch leaderboard and trips on mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [leaderboardResponse, tripsResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/leaderboard/`),
+        const [, tripsResponse] = await Promise.all([
+          fetchLeaderboard(),
           fetch(`${API_BASE}/api/trips/`),
         ]);
-
-        if (leaderboardResponse.ok) {
-          const data = await leaderboardResponse.json();
-          setLeaderboard(Array.isArray(data) ? data : (data.players ?? []));
-        }
 
         if (tripsResponse.ok) {
           const data = await tripsResponse.json();
@@ -262,11 +269,7 @@ export default function Home() {
         });
 
         // Re-fetch leaderboard to reflect fresh ELO
-        const lbResponse = await fetch(`${API_BASE}/api/leaderboard/`);
-        if (lbResponse.ok) {
-          const lbData = await lbResponse.json();
-          setLeaderboard(Array.isArray(lbData) ? lbData : (lbData.players ?? []));
-        }
+        await fetchLeaderboard();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to verify proof.");
@@ -283,18 +286,10 @@ export default function Home() {
       if (USE_MOCKS) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setLeaderboard(mockLeaderboard);
-        setActiveTab("scoreboard");
       } else {
-        const response = await fetch(`${API_BASE}/api/leaderboard/`);
-
-        if (!response.ok) {
-          throw new Error(`Leaderboard request failed (${response.status})`);
-        }
-
-        const data = await response.json();
-        setLeaderboard(Array.isArray(data) ? data : (data.players ?? []));
-        setActiveTab("scoreboard");
+        await fetchLeaderboard();
       }
+      setActiveTab("scoreboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load leaderboard.");
     } finally {
@@ -442,7 +437,12 @@ export default function Home() {
 
         <button
           className={`nav-item-btn ${activeTab === "scoreboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("scoreboard")}
+          onClick={async () => {
+            setActiveTab("scoreboard");
+            if (!USE_MOCKS) {
+              await fetchLeaderboard();
+            }
+          }}
         >
           <span>🏆</span>
           <span>scoreboard</span>
