@@ -25,3 +25,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# python / django
+venv/
+db.sqlite3
+__pycache__/
+*.py[cod]
+*.sqlite3

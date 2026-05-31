@@ -26,29 +26,29 @@
 **Key Files:** `app/`, `components/`, styles.
 
 ### **Dev 2: Backend/API & Data Layer**
-**Owns:** Server, APIs, data storage, request orchestration.  
-**Branches:** `feat/backend`  
-**Key Files:** `app/api/`, `lib/store.js`.
+**Owns:** Django server, REST APIs, SQLite data, request orchestration.  
+**Branches:** `backend`  
+**Key Files:** `core/`, `api/models.py`, `api/views.py`, `manage.py`, `requirements.txt`.
 
 ### **Dev 3: AI & Logic Functions**
 **Owns:** All AI calls, all business logic, all calculations.  
 **Branches:** `feat/ai`  
-**Key Files:** `lib/ai.js`, `lib/planner.js`, `lib/verifier.js`, `lib/elo.js`.
+**Key Files:** `api/ai.py`, `api/planner.py`, `api/verifier.py`, `api/elo.py` (Python modules imported by Dev 2's views).
 
 ---
 
 ## 🛠 Tech Stack
 
 ```
-Frontend:        React (Next.js App Router)
-Backend:         Next.js API Routes
+Frontend:        React (Next.js App Router) — http://localhost:3000
+Backend:         Django 4.2 + Django REST Framework — http://localhost:8000
 AI:              Anthropic Claude API (claude-sonnet-4-20250514)
 Styling:         CSS-in-JS / Tailwind (optional, but fast)
-Data:            In-memory store (no real DB for MVP)
-Environment:     Node.js 18+
+Data:            SQLite (Django default — no extra DB setup)
+Environment:     Python 3.12+ (backend), Node.js 18+ (frontend)
 ```
 
-**Why Next.js?** One repo, API routes are isolated files per feature (no conflicts), React + backend in one place, deploy-ready.
+**Why split stack?** Frontend and backend run on separate ports with zero file conflicts. Dev 1 owns Next.js UI; Dev 2 owns a standalone Django API with SQLite. CORS is enabled so the frontend can call `http://localhost:8000/api/...` directly.
 
 ---
 
@@ -56,36 +56,41 @@ Environment:     Node.js 18+
 
 ```
 summer-adventures-mvp/
-├── app/
-│   ├── page.jsx              (Dev 1: Main shell, screen routing)
-│   ├── layout.jsx            (Dev 1: Root layout)
-│   ├── globals.css           (Dev 1: Global theme & styles)
-│   └── api/
-│       ├── room/route.js     (Dev 2: GET room data)
-│       ├── plan/route.js     (Dev 2: POST trip planning)
-│       ├── verify/route.js   (Dev 2: POST photo verification)
-│       ├── leaderboard/route.js  (Dev 2: GET leaderboard)
-│       └── score/route.js    (Dev 2: POST update ELO)
-├── components/
+├── app/                          (Dev 1: Next.js frontend)
+│   ├── page.jsx                  (Main shell, screen routing)
+│   ├── layout.jsx                (Root layout)
+│   └── globals.css               (Global theme & styles)
+├── components/                   (Dev 1)
 │   ├── room/
-│   │   ├── RoomScreen.jsx    (Dev 1)
-│   │   └── PlanView.jsx      (Dev 1)
+│   │   ├── RoomScreen.jsx
+│   │   └── PlanView.jsx
 │   ├── proof/
-│   │   ├── ProofScreen.jsx   (Dev 1)
-│   │   └── VerdictCard.jsx   (Dev 1)
+│   │   ├── ProofScreen.jsx
+│   │   └── VerdictCard.jsx
 │   └── leaderboard/
-│       └── Leaderboard.jsx   (Dev 1)
-├── lib/
-│   ├── contracts.js          (TEAM: Frozen data shapes)
-│   ├── store.js              (Dev 2: In-memory data + helpers)
-│   ├── ai.js                 (Dev 3: Anthropic client)
-│   ├── planner.js            (Dev 3: Trip planning logic)
-│   ├── verifier.js           (Dev 3: Photo verification logic)
-│   └── elo.js                (Dev 3: ELO calculation)
-├── package.json
-├── .env.local                (ANTHROPIC_API_KEY=your-key-here)
+│       └── Leaderboard.jsx
+├── core/                         (Dev 2: Django project)
+│   ├── settings.py               (CORS, DRF, INSTALLED_APPS)
+│   └── urls.py                   (API URL routing)
+├── api/                          (Dev 2 + Dev 3)
+│   ├── models.py                 (Dev 2: Player, Trip)
+│   ├── views.py                  (Dev 2: all 5 API endpoints)
+│   ├── migrations/
+│   ├── management/commands/
+│   │   └── seed.py               (Dev 2: seed leaderboard players)
+│   ├── ai.py                     (Dev 3: Anthropic client)
+│   ├── planner.py                (Dev 3: Trip planning logic)
+│   ├── verifier.py               (Dev 3: Photo verification logic)
+│   └── elo.py                    (Dev 3: ELO calculation)
+├── manage.py                     (Dev 2)
+├── requirements.txt              (Dev 2: django, djangorestframework, django-cors-headers)
+├── db.sqlite3                    (Dev 2: auto-created after migrate)
+├── package.json                  (Dev 1: Next.js)
+├── .env.local                    (ANTHROPIC_API_KEY=your-key-here)
 └── next.config.js
 ```
+
+> **Frontend API calls** point to the Django server, e.g. `fetch('http://localhost:8000/api/plan', ...)`.
 
 ---
 
@@ -95,7 +100,7 @@ summer-adventures-mvp/
 - **All React components** — build every screen users see.
 - **All styling** — design system, theme, responsive layout.
 - **State management** — manage current screen, room, plan, verdict, leaderboard in `app/page.jsx`.
-- **API integration** — fetch from Dev 2's endpoints.
+- **API integration** — fetch from Dev 2's Django endpoints at `http://localhost:8000/api/...`.
 - **Loading/error states** — handle pending and failure gracefully.
 
 ### Files to Create
@@ -636,175 +641,241 @@ h1 {
 
 ---
 
-## ⚙️ Dev 2: Backend/API & Data
+## ⚙️ Dev 2: Backend/API & Data (Django)
 
 ### Responsibilities
-- **All API routes** — five endpoints that Dev 1 calls.
-- **Data storage** — in-memory store with pre-seeded data.
-- **Request handling** — validate inputs, call Dev 3's functions, return responses.
-- **Orchestration** — wire Dev 3's AI functions into the API flow.
+- **Django REST API** — five endpoints that Dev 1 calls on port 8000.
+- **SQLite storage** — `Player` and `Trip` models with seeded leaderboard data.
+- **Request handling** — validate inputs, call Dev 3's Python functions, return JSON responses.
+- **CORS** — enable cross-origin requests from the Next.js frontend on port 3000.
+- **Orchestration** — wire Dev 3's AI modules into view functions with mock fallbacks.
+
+### Setup
+```bash
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed
+python manage.py runserver 8000
+```
 
 ### Files to Create
 
-#### `lib/store.js` (Data Store)
-```javascript
-// In-memory data store for MVP
+#### `requirements.txt`
+```
+django==4.2
+djangorestframework
+django-cors-headers
+```
 
-let currentUser = {
-  id: '1',
-  name: 'You',
-  avatar: '😎',
-};
+#### `core/settings.py` (key additions)
+```python
+INSTALLED_APPS = [
+    # ... django defaults ...
+    'corsheaders',
+    'rest_framework',
+    'api',
+]
 
-let room = {
-  id: 'room-1',
-  members: [
-    currentUser,
-    { id: '2', name: 'Ali', avatar: '🧑' },
-    { id: '3', name: 'Masha', avatar: '👩' },
-  ],
-};
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # must be first
+    # ... rest of middleware ...
+]
 
-let trips = [];
+CORS_ALLOW_ALL_ORIGINS = True
 
-let players = [
-  { id: '1', name: 'You', avatar: '😎', elo: 1250, completedTrips: 1 },
-  { id: '4', name: 'John', avatar: '🧔', elo: 1400, completedTrips: 5 },
-  { id: '5', name: 'Sarah', avatar: '👱', elo: 1350, completedTrips: 4 },
-  { id: '6', name: 'Mike', avatar: '👨', elo: 1100, completedTrips: 2 },
-  { id: '7', name: 'Emma', avatar: '👧', elo: 950, completedTrips: 0 },
-];
-
-export function getRoom() {
-  return room;
-}
-
-export function saveTrip(trip) {
-  trips.push(trip);
-  return trip;
-}
-
-export function getTrip(id) {
-  return trips.find(t => t.id === id);
-}
-
-export function getPlayers() {
-  return players.sort((a, b) => b.elo - a.elo);
-}
-
-export function updatePlayer(id, patch) {
-  const player = players.find(p => p.id === id);
-  if (player) {
-    Object.assign(player, patch);
-  }
-  return player;
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
 }
 ```
 
-#### `app/api/room/route.js`
-```javascript
-import { getRoom } from '@/lib/store';
+#### `api/models.py`
+```python
+from django.db import models
 
-export async function GET() {
-  const room = getRoom();
-  return Response.json({ room });
-}
+class Player(models.Model):
+    name = models.CharField(max_length=100)
+    avatar = models.CharField(max_length=10)
+    elo = models.FloatField(default=1200)
+    completed_trips = models.IntegerField(default=0)
+
+class Trip(models.Model):
+    activity = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, default='planning')
+    coolness_score = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 ```
 
-#### `app/api/plan/route.js`
-```javascript
-import { generatePlan } from '@/lib/planner';
+#### `api/management/commands/seed.py`
+```python
+from django.core.management.base import BaseCommand
+from api.models import Player
 
-export async function POST(request) {
-  const { activity, members } = await request.json();
+PLAYERS = [
+    {'name': 'You',   'avatar': '😎', 'elo': 1250, 'completed_trips': 1},
+    {'name': 'John',  'avatar': '🧔', 'elo': 1400, 'completed_trips': 5},
+    {'name': 'Sarah', 'avatar': '👱', 'elo': 1350, 'completed_trips': 4},
+    {'name': 'Mike',  'avatar': '👨', 'elo': 1100, 'completed_trips': 2},
+    {'name': 'Emma',  'avatar': '👧', 'elo': 950,  'completed_trips': 0},
+]
 
-  try {
-    const plan = await generatePlan({ activity, members, location: 'current' });
-    return Response.json({ plan });
-  } catch (error) {
-    console.error('Plan generation error:', error);
-    return Response.json(
-      { error: 'Failed to generate plan' },
-      { status: 500 }
-    );
-  }
-}
+class Command(BaseCommand):
+    def handle(self, *args, **options):
+        if Player.objects.exists():
+            return
+        for data in PLAYERS:
+            Player.objects.create(**data)
 ```
 
-#### `app/api/verify/route.js`
-```javascript
-import { verifyProof } from '@/lib/verifier';
+#### `core/urls.py`
+```python
+from django.urls import path
+from api import views
 
-export async function POST(request) {
-  const { activity, image } = await request.json();
-
-  try {
-    const verdict = await verifyProof({ activity, imageBase64: image });
-    return Response.json({ verdict });
-  } catch (error) {
-    console.error('Verification error:', error);
-    return Response.json(
-      { error: 'Failed to verify proof' },
-      { status: 500 }
-    );
-  }
-}
+urlpatterns = [
+    path('api/room/',        views.room),
+    path('api/plan/',        views.plan),
+    path('api/verify/',      views.verify),
+    path('api/leaderboard/', views.leaderboard),
+    path('api/score/',       views.score),
+]
 ```
 
-#### `app/api/leaderboard/route.js`
-```javascript
-import { getPlayers } from '@/lib/store';
+#### `api/views.py` (all 5 endpoints)
+```python
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Player
 
-export async function GET() {
-  const players = getPlayers();
-  return Response.json({ players });
+MOCK_PLAN = {
+    'packingList': ['Water', 'Sunscreen', 'Backpack'],
+    'bestDay': 'Saturday',
+    'steps': ['Meet at 10am', 'Head to location', 'Adventure time!'],
 }
-```
 
-#### `app/api/score/route.js`
-```javascript
-import { applyResult } from '@/lib/elo';
-import { updatePlayer, getPlayers } from '@/lib/store';
-
-export async function POST(request) {
-  const { playerId, coolnessScore } = await request.json();
-
-  try {
-    const player = updatePlayer(playerId, {});
-    if (!player) {
-      return Response.json(
-        { error: 'Player not found' },
-        { status: 404 }
-      );
-    }
-
-    const newElo = applyResult(player.elo, coolnessScore);
-    updatePlayer(playerId, { elo: newElo, completedTrips: (player.completedTrips || 0) + 1 });
-
-    const players = getPlayers();
-    return Response.json({ players });
-  } catch (error) {
-    console.error('Score update error:', error);
-    return Response.json(
-      { error: 'Failed to update score' },
-      { status: 500 }
-    );
-  }
+MOCK_VERDICT = {
+    'verified': True,
+    'reason': 'Looks like a great adventure!',
+    'coolnessScore': 72,
 }
+
+ROOM = {
+    'id': 'room-1',
+    'members': [
+        {'id': '1', 'name': 'You',   'avatar': '😎'},
+        {'id': '2', 'name': 'Ali',   'avatar': '🧑'},
+        {'id': '3', 'name': 'Masha', 'avatar': '👩'},
+    ],
+}
+
+def serialize_players():
+    return [
+        {
+            'id': p.id,
+            'name': p.name,
+            'avatar': p.avatar,
+            'elo': p.elo,
+            'completedTrips': p.completed_trips,
+        }
+        for p in Player.objects.all().order_by('-elo')
+    ]
+
+@api_view(['GET'])
+def room(request):
+    try:
+        return Response({'room': ROOM})
+    except Exception as err:
+        print('room error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def plan(request):
+    try:
+        activity = request.data.get('activity', '')
+        members = request.data.get('members', [])
+        try:
+            from .planner import generate_plan
+            plan_data = generate_plan(activity, members)
+            return Response({'plan': plan_data})
+        except Exception as err:
+            print('plan error:', err)
+            return Response({'plan': MOCK_PLAN})
+    except Exception as err:
+        print('plan error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def verify(request):
+    try:
+        activity = request.data.get('activity', '')
+        image = request.data.get('image', '')
+        try:
+            from .verifier import verify_proof
+            verdict = verify_proof(activity, image)
+            return Response({'verdict': verdict})
+        except Exception as err:
+            print('verify error:', err)
+            return Response({'verdict': MOCK_VERDICT})
+    except Exception as err:
+        print('verify error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def leaderboard(request):
+    try:
+        return Response({'players': serialize_players()})
+    except Exception as err:
+        print('leaderboard error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def score(request):
+    try:
+        player_id = request.data.get('playerId')
+        coolness_score = request.data.get('coolnessScore', 0)
+        try:
+            player = Player.objects.get(id=player_id)
+        except Player.DoesNotExist:
+            return Response({'error': 'Player not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            from .elo import apply_result
+            new_elo = apply_result(player.elo, coolness_score)
+        except Exception as err:
+            print('score error:', err)
+            new_elo = player.elo + (coolness_score // 10) * 10
+
+        player.elo = new_elo
+        player.completed_trips += 1
+        player.save()
+        return Response({'players': serialize_players()})
+    except Exception as err:
+        print('score error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 ```
 
 ### Checklist for Dev 2
-- [ ] Create `lib/store.js` with in-memory data and helper functions
-- [ ] Create all 5 API route files
-- [ ] Test routes with mocked responses (before Dev 3's functions are ready)
-- [ ] Verify request/response shapes match contracts
-- [ ] Wire Dev 3's functions into routes once they're ready
-- [ ] Handle errors gracefully
-- [ ] Test end-to-end flow with Dev 1 and Dev 3
+- [ ] Create Django project `core` and app `api`
+- [ ] Install `djangorestframework` and `django-cors-headers`
+- [ ] Configure `settings.py` (CORS, DRF, INSTALLED_APPS)
+- [ ] Create `Player` and `Trip` models, run `migrate`
+- [ ] Create `seed` management command and run `python manage.py seed`
+- [ ] Implement all 5 views in `api/views.py`
+- [ ] Wire URLs in `core/urls.py`
+- [ ] Test all endpoints with `curl http://localhost:8000/api/...`
+- [ ] Verify JSON uses camelCase (`coolnessScore`, `completedTrips`, `packingList`)
+- [ ] Wire Dev 3's Python modules (`api/planner.py`, etc.) once ready
+- [ ] Confirm CORS works from frontend on port 3000
 
 ---
 
 ## 🤖 Dev 3: AI & Logic Functions
+
+> **Note:** Dev 3 writes **Python** modules in `api/` (`planner.py`, `verifier.py`, `elo.py`, `ai.py`). The JavaScript examples below show the logic to port — function names and return shapes must match what Dev 2's views import.
 
 ### Responsibilities
 - **AI client** — wrapper around Anthropic API for Dev 2 to use.
@@ -1106,8 +1177,15 @@ git checkout -b feat/frontend
 
 **Dev 2:**
 ```bash
-git checkout -b feat/backend
-# Create lib/store.js and all api/ routes
+git checkout -b backend
+python3.12 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+django-admin startproject core .
+python manage.py startapp api
+# Build models, views, urls, seed command
+python manage.py migrate
+python manage.py seed
+python manage.py runserver 8000
 ```
 
 **Dev 3:**
@@ -1123,8 +1201,8 @@ git checkout -b feat/ai
 | Time | Dev 1 | Dev 2 | Dev 3 |
 |------|-------|-------|-------|
 | **0:00–0:15** | **TEAM: Scaffold & setup** | | |
-| **0:15–1:15** | Build all screens against mocked APIs | Build API routes returning mocks | Build AI functions with real API |
-| **1:15–1:30** | Polish UI, add loading states | Integrate Dev 3's functions into routes | Finalize & test all functions |
+| **0:15–1:15** | Build all screens against mocked APIs | Build Django views returning mocks + SQLite seed | Build AI functions with real API |
+| **1:15–1:30** | Polish UI, add loading states | Integrate Dev 3's Python modules into views | Finalize & test all functions |
 | **1:30–1:50** | Final styling & micro-interactions | Test end-to-end API flow | Debug any AI issues |
 | **1:50–2:00** | Full integration test + demo dry-run | | |
 
@@ -1135,8 +1213,8 @@ git checkout -b feat/ai
 ### Branches
 ```
 main                (scaffold only, frozen)
-├── feat/frontend   (Dev 1)
-├── feat/backend    (Dev 2)
+├── frontend        (Dev 1)
+├── backend         (Dev 2 — Django API)
 └── feat/ai         (Dev 3)
 ```
 
@@ -1155,11 +1233,10 @@ main                (scaffold only, frozen)
    ```bash
    git checkout main
    git pull
-   git checkout feat/backend
+   git checkout backend
    git rebase main
-   # Resolve any conflicts (unlikely — different files)
    git checkout main
-   git merge feat/backend
+   git merge backend
    ```
 
 3. **Dev 1 merges last** (integrator):
@@ -1189,18 +1266,15 @@ const mockPlan = {
 };
 ```
 
-**Dev 2** returns mock responses:
-```javascript
-// In route handlers during development
-if (!process.env.ANTHROPIC_API_KEY) {
-  return Response.json({
-    plan: {
-      packingList: ['Item 1', 'Item 2'],
-      bestDay: 'Saturday',
-      steps: ['Step 1', 'Step 2'],
-    },
-  });
+**Dev 2** returns mock responses from Django views:
+```python
+# In api/views.py during development — already built in with try/except fallbacks
+MOCK_PLAN = {
+    'packingList': ['Water', 'Sunscreen', 'Backpack'],
+    'bestDay': 'Saturday',
+    'steps': ['Meet at 10am', 'Head to location', 'Adventure time!'],
 }
+return Response({'plan': MOCK_PLAN})
 ```
 
 **Dev 3** logs output and tests locally:
@@ -1232,9 +1306,9 @@ Remove mocks and wire real functions together.
 
 ## 🎯 Golden Rules
 
-1. **Dev 1 never edits `app/api/` or `lib/`** (except following imports).
-2. **Dev 2 never edits `components/` or `app/page.jsx`**.
-3. **Dev 3 never edits `app/` or API routes**.
+1. **Dev 1 never edits `core/`, `api/`, or `manage.py`** (frontend only).
+2. **Dev 2 never edits `components/` or `app/page.jsx`** (Django backend only).
+3. **Dev 3 never edits `core/urls.py` or `api/views.py`** — only adds `api/planner.py`, `api/verifier.py`, `api/elo.py`, `api/ai.py`.
 4. **Don't touch `lib/contracts.js` or `package.json`** after scaffold without team agreement.
 5. **Shared API contracts are FROZEN at 0:15** — any change must be discussed with all three.
 6. **Always return data in the agreed JSON shape** — mismatches break integration.
@@ -1250,9 +1324,15 @@ Remove mocks and wire real functions together.
 - Run `npm install` if you added dependencies.
 
 ### "API is returning 500 error"
-- Check `.env.local` has `ANTHROPIC_API_KEY` set.
-- Check function signatures match what Dev 2 expects.
-- Log errors in route handlers to see what's wrong.
+- Check Django server is running: `python manage.py runserver 8000`
+- Check `python manage.py seed` was run (leaderboard needs players)
+- Check function signatures match what Dev 2's views expect
+- Log errors with `print()` in view functions to see what's wrong
+
+### "CORS error in browser"
+- Verify `CORS_ALLOW_ALL_ORIGINS = True` in `core/settings.py`
+- Verify `corsheaders.middleware.CorsMiddleware` is first in `MIDDLEWARE`
+- Frontend must call `http://localhost:8000/api/...` not `/api/...`
 
 ### "Frontend shows loading forever"
 - Check browser Network tab for API response.
@@ -1260,9 +1340,9 @@ Remove mocks and wire real functions together.
 - Verify JSON response shape matches contract.
 
 ### "ELO not updating"
-- Verify Dev 2 is calling `applyResult()` from Dev 3.
-- Check `/api/leaderboard` returns fresh data after `/api/score`.
-- Verify `updatePlayer()` in store is being called.
+- Verify Dev 2's `score` view calls `apply_result()` from `api/elo.py`
+- Check `/api/leaderboard` returns fresh data after `/api/score`
+- Verify player exists in SQLite (`python manage.py shell` → `Player.objects.all()`)
 
 ### "Photo verification is failing"
 - Check image Base64 encoding (remove `data:...;base64,` prefix).
@@ -1287,7 +1367,7 @@ Remove mocks and wire real functions together.
 ## 📝 Summary
 
 - **Dev 1** builds the entire UI from scratch against mocked APIs.
-- **Dev 2** builds all 5 API endpoints, manages data, and wires Dev 3's functions.
+- **Dev 2** builds the Django REST API with SQLite, seeds data, and wires Dev 3's Python modules.
 - **Dev 3** builds all AI logic and functions.
 - **Everyone** starts with the frozen scaffold and merges at the end.
 - **No conflicts** because each dev owns completely separate files.
