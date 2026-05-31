@@ -1,11 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
-export default function ProofScreen({ onProofReady }) {
-  const [activity, setActivity] = useState("");
+export default function ProofScreen({ activity: initialActivity = "", onProofReady }) {
+  const [activity, setActivity] = useState(initialActivity);
   const [fileName, setFileName] = useState("");
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (initialActivity) {
+      setActivity(initialActivity);
+    }
+  }, [initialActivity]);
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];

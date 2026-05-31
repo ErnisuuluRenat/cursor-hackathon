@@ -1,11 +1,6 @@
 "use client";
 
-export default function LobbyScreen({ onNavigate }) {
-  const activeRooms = [
-    { id: 1, name: "Japan Exploration 🇯🇵", members: "Jordan, Riley, You", status: "In Planning" },
-    { id: 2, name: "Sunset Beach volleyball 🏐", members: "Jordan, Alex, Sam", status: "Proof Pending" },
-  ];
-
+export default function LobbyScreen({ activeRooms = [], onNavigate }) {
   return (
     <div className="app-container">
       <h2 style={{ textAlign: "center", marginBottom: "0.25rem", fontSize: "1.6rem" }}>
@@ -58,7 +53,12 @@ export default function LobbyScreen({ onNavigate }) {
         Active Adventures
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
-        {activeRooms.map((room) => (
+        {activeRooms.length === 0 ? (
+          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>
+            No adventures yet. Tap &quot;создай свой ивент&quot; to plan one!
+          </p>
+        ) : (
+          activeRooms.map((room) => (
           <div
             key={room.id}
             style={{
@@ -81,8 +81,8 @@ export default function LobbyScreen({ onNavigate }) {
               style={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: room.status === "In Planning" ? "var(--secondary)" : "var(--primary)",
-                background: room.status === "In Planning" ? "rgba(20, 184, 166, 0.1)" : "rgba(255, 107, 107, 0.1)",
+                color: room.status === "In Planning" ? "var(--secondary)" : room.status === "Completed" ? "#22c55e" : "var(--primary)",
+                background: room.status === "In Planning" ? "rgba(20, 184, 166, 0.1)" : room.status === "Completed" ? "rgba(34, 197, 94, 0.1)" : "rgba(255, 107, 107, 0.1)",
                 padding: "0.25rem 0.5rem",
                 borderRadius: "4px",
               }}
@@ -90,7 +90,8 @@ export default function LobbyScreen({ onNavigate }) {
               {room.status}
             </span>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

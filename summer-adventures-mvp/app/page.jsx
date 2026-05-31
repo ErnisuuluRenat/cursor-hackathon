@@ -32,6 +32,11 @@ const mockVerdict = {
   coolnessScore: 85,
 };
 
+const INITIAL_EVENTS = [
+  { id: 1, name: "Japan Exploration 🇯🇵", members: "Jordan, Riley, You", status: "In Planning" },
+  { id: 2, name: "Sunset Beach volleyball 🏐", members: "Jordan, Alex, Sam", status: "Proof Pending" },
+];
+
 const mockLeaderboard = [
   {
     id: "1",
@@ -63,6 +68,8 @@ export default function Home() {
   const [room, setRoom] = useState(null);
   const [plan, setPlan] = useState(null);
   const [verdict, setVerdict] = useState(null);
+  const [activeEvents, setActiveEvents] = useState(INITIAL_EVENTS);
+  const [currentEventId, setCurrentEventId] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -83,6 +90,27 @@ export default function Home() {
     fetchInitialData();
   }, []);
 
+  const addActiveEvent = (activity, selectedMembers) => {
+    const memberNames = selectedMembers.map((m) => m.name);
+    const members = memberNames.length > 0 ? `${memberNames.join(", ")}, You` : "You";
+    const newEvent = {
+      id: Date.now(),
+      name: activity,
+      members,
+      status: "In Planning",
+    };
+    setActiveEvents((prev) => [newEvent, ...prev]);
+    setCurrentEventId(newEvent.id);
+    return newEvent.id;
+  };
+
+  const updateEventStatus = (eventId, status) => {
+    if (!eventId) return;
+    setActiveEvents((prev) =>
+      prev.map((event) => (event.id === eventId ? { ...event, status } : event))
+    );
+  };
+
   const handlePlanReady = async (activity, selectedMembers) => {
     setLoading(true);
     setError(null);
@@ -91,6 +119,7 @@ export default function Home() {
       if (USE_MOCKS) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setRoom({ activity, members: selectedMembers });
+        addActiveEvent(activity, selectedMembers);
         setPlan(mockPlan);
         setEventScreen("plan");
       } else {
@@ -109,6 +138,7 @@ export default function Home() {
 
         const data = await response.json();
         setRoom({ activity, members: selectedMembers });
+        addActiveEvent(activity, selectedMembers);
         setPlan(data.plan ?? data);
         setEventScreen("plan");
       }
@@ -127,6 +157,7 @@ export default function Home() {
       if (USE_MOCKS) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setVerdict(mockVerdict);
+        updateEventStatus(currentEventId, "Completed");
         setEventScreen("verdict");
       } else {
         const response = await fetch(`${API_BASE}/api/verify/`, {
@@ -145,6 +176,7 @@ export default function Home() {
         const data = await response.json();
         const verdictData = data.verdict ?? data;
         setVerdict(verdictData);
+        updateEventStatus(currentEventId, "Completed");
         setEventScreen("verdict");
         
         // Auto-update stats and post score
@@ -261,7 +293,7 @@ export default function Home() {
       {!loading && (
         <>
           {activeTab === "главная" && (
-            <LobbyScreen onNavigate={(tab) => setActiveTab(tab)} />
+            <LobbyScreen activeRooms={activeEvents} onNavigate={(tab) => setActiveTab(tab)} />
           )}
 
           {activeTab === "Хиты" && (
@@ -291,11 +323,20 @@ export default function Home() {
               )}
 
               {eventScreen === "plan" && (
-                <PlanView plan={plan} onNext={() => setEventScreen("proof")} />
+                <PlanView
+                  plan={plan}
+                  onNext={() => {
+                    updateEventStatus(currentEventId, "Proof Pending");
+                    setEventScreen("proof");
+                  }}
+                />
               )}
 
               {eventScreen === "proof" && (
-                <ProofScreen onProofReady={handleProofReady} />
+                <ProofScreen
+                  activity={room?.activity ?? ""}
+                  onProofReady={handleProofReady}
+                />
               )}
 
               {eventScreen === "verdict" && (
