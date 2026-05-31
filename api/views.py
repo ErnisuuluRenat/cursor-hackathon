@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Player
+from .models import Player, Trip
 
 MOCK_PLAN = {
     'packingList': ['Water', 'Sunscreen', 'Backpack'],
@@ -25,6 +25,25 @@ ROOM = {
         {'id': '3', 'name': 'Masha', 'avatar': '👩'},
     ],
 }
+
+TRIP_STATUS_LABELS = {
+    Trip.STATUS_PLANNING: 'In Planning',
+    Trip.STATUS_PROOF_PENDING: 'Proof Pending',
+    Trip.STATUS_COMPLETED: 'Completed',
+}
+
+
+def serialize_trip(trip):
+    return {
+        'id': trip.id,
+        'name': trip.activity,
+        'activity': trip.activity,
+        'members': trip.members,
+        'status': trip.status,
+        'statusLabel': TRIP_STATUS_LABELS.get(trip.status, trip.status),
+        'coolnessScore': trip.coolness_score,
+        'createdAt': trip.created_at.isoformat(),
+    }
 
 
 def serialize_players():
@@ -121,6 +140,59 @@ def score(request):
         return Response({'players': serialize_players()})
     except Exception as err:
         print('score error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'POST'])
+def trips(request):
+    try:
+        if request.method == 'GET':
+            trips_qs = Trip.objects.all().order_by('-created_at')
+            return Response({'trips': [serialize_trip(t) for t in trips_qs]})
+
+        activity = request.data.get('activity', '').strip()
+        if not activity:
+            return Response({'error': 'Activity is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        members = request.data.get('members', 'You')
+        trip_status = request.data.get('status', Trip.STATUS_PLANNING)
+        if trip_status not in TRIP_STATUS_LABELS:
+            trip_status = Trip.STATUS_PLANNING
+
+        trip = Trip.objects.create(
+            activity=activity,
+            members=members,
+            status=trip_status,
+        )
+        return Response({'trip': serialize_trip(trip)}, status=status.HTTP_201_CREATED)
+    except Exception as err:
+        print('trips error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+def trip_detail(request, trip_id):
+    try:
+        try:
+            trip = Trip.objects.get(id=trip_id)
+        except Trip.DoesNotExist:
+            return Response({'error': 'Trip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        trip_status = request.data.get('status')
+        if trip_status is not None:
+            if trip_status in TRIP_STATUS_LABELS:
+                trip.status = trip_status
+            else:
+                return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        coolness_score = request.data.get('coolnessScore')
+        if coolness_score is not None:
+            trip.coolness_score = coolness_score
+
+        trip.save()
+        return Response({'trip': serialize_trip(trip)})
+    except Exception as err:
+        print('trip_detail error:', err)
         return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -12,8 +12,13 @@ class Player(models.Model):
 
 
 class Trip(models.Model):
+    STATUS_PLANNING = 'planning'
+    STATUS_PROOF_PENDING = 'proof_pending'
+    STATUS_COMPLETED = 'completed'
+
     activity = models.CharField(max_length=200)
-    status = models.CharField(max_length=20, default='planning')
+    members = models.CharField(max_length=500, default='You')
+    status = models.CharField(max_length=20, default=STATUS_PLANNING)
     coolness_score = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

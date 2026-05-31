@@ -32,10 +32,18 @@ const mockVerdict = {
   coolnessScore: 85,
 };
 
-const INITIAL_EVENTS = [
-  { id: 1, name: "Japan Exploration 🇯🇵", members: "Jordan, Riley, You", status: "In Planning" },
-  { id: 2, name: "Sunset Beach volleyball 🏐", members: "Jordan, Alex, Sam", status: "Proof Pending" },
-];
+const STATUS_TO_API = {
+  "In Planning": "planning",
+  "Proof Pending": "proof_pending",
+  Completed: "completed",
+};
+
+const toLobbyEvent = (trip) => ({
+  id: trip.id,
+  name: trip.name ?? trip.activity,
+  members: trip.members,
+  status: trip.statusLabel ?? trip.status,
+});
 
 const mockLeaderboard = [
   {
@@ -68,27 +76,94 @@ export default function Home() {
   const [room, setRoom] = useState(null);
   const [plan, setPlan] = useState(null);
   const [verdict, setVerdict] = useState(null);
-  const [activeEvents, setActiveEvents] = useState(INITIAL_EVENTS);
+  const [activeEvents, setActiveEvents] = useState([]);
   const [currentEventId, setCurrentEventId] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Auto-fetch leaderboard data on mount
+  // Auto-fetch leaderboard and trips on mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/leaderboard/`);
-        if (response.ok) {
-          const data = await response.json();
+        const [leaderboardResponse, tripsResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/leaderboard/`),
+          fetch(`${API_BASE}/api/trips/`),
+        ]);
+
+        if (leaderboardResponse.ok) {
+          const data = await leaderboardResponse.json();
           setLeaderboard(Array.isArray(data) ? data : (data.players ?? []));
         }
+
+        if (tripsResponse.ok) {
+          const data = await tripsResponse.json();
+          setActiveEvents((data.trips ?? []).map(toLobbyEvent));
+        }
       } catch (err) {
-        console.error("Failed to load initial leaderboard", err);
+        console.error("Failed to load initial data", err);
       }
     };
     fetchInitialData();
   }, []);
+
+  const createTripOnServer = async (activity, selectedMembers) => {
+    const memberNames = selectedMembers.map((m) => m.name);
+    const members = memberNames.length > 0 ? `${memberNames.join(", ")}, You` : "You";
+
+    const response = await fetch(`${API_BASE}/api/trips/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        activity,
+        members,
+        status: "planning",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save event (${response.status})`);
+    }
+
+    const data = await response.json();
+    const trip = toLobbyEvent(data.trip);
+    setActiveEvents((prev) => [trip, ...prev]);
+    setCurrentEventId(trip.id);
+    return trip.id;
+  };
+
+  const updateEventStatus = async (eventId, status, coolnessScore) => {
+    if (!eventId) return;
+
+    setActiveEvents((prev) =>
+      prev.map((event) => (event.id === eventId ? { ...event, status } : event))
+    );
+
+    if (USE_MOCKS) return;
+
+    try {
+      const payload = { status: STATUS_TO_API[status] ?? status };
+      if (coolnessScore != null) {
+        payload.coolnessScore = coolnessScore;
+      }
+
+      const response = await fetch(`${API_BASE}/api/trips/${eventId}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const updatedTrip = toLobbyEvent(data.trip);
+        setActiveEvents((prev) =>
+          prev.map((event) => (event.id === eventId ? updatedTrip : event))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update event status", err);
+    }
+  };
 
   const addActiveEvent = (activity, selectedMembers) => {
     const memberNames = selectedMembers.map((m) => m.name);
@@ -102,13 +177,6 @@ export default function Home() {
     setActiveEvents((prev) => [newEvent, ...prev]);
     setCurrentEventId(newEvent.id);
     return newEvent.id;
-  };
-
-  const updateEventStatus = (eventId, status) => {
-    if (!eventId) return;
-    setActiveEvents((prev) =>
-      prev.map((event) => (event.id === eventId ? { ...event, status } : event))
-    );
   };
 
   const handlePlanReady = async (activity, selectedMembers) => {
@@ -138,7 +206,7 @@ export default function Home() {
 
         const data = await response.json();
         setRoom({ activity, members: selectedMembers });
-        addActiveEvent(activity, selectedMembers);
+        await createTripOnServer(activity, selectedMembers);
         setPlan(data.plan ?? data);
         setEventScreen("plan");
       }
@@ -157,7 +225,7 @@ export default function Home() {
       if (USE_MOCKS) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setVerdict(mockVerdict);
-        updateEventStatus(currentEventId, "Completed");
+        await updateEventStatus(currentEventId, "Completed", mockVerdict.coolnessScore);
         setEventScreen("verdict");
       } else {
         const response = await fetch(`${API_BASE}/api/verify/`, {
@@ -176,7 +244,11 @@ export default function Home() {
         const data = await response.json();
         const verdictData = data.verdict ?? data;
         setVerdict(verdictData);
-        updateEventStatus(currentEventId, "Completed");
+        await updateEventStatus(
+          currentEventId,
+          "Completed",
+          verdictData.coolnessScore ?? 60
+        );
         setEventScreen("verdict");
         
         // Auto-update stats and post score
@@ -325,8 +397,8 @@ export default function Home() {
               {eventScreen === "plan" && (
                 <PlanView
                   plan={plan}
-                  onNext={() => {
-                    updateEventStatus(currentEventId, "Proof Pending");
+                  onNext={async () => {
+                    await updateEventStatus(currentEventId, "Proof Pending");
                     setEventScreen("proof");
                   }}
                 />
