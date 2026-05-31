@@ -16,14 +16,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code and sqlite DB
+# Copy source code (db.sqlite3 is created at startup via migrate + seed)
 COPY api/ ./api/
 COPY core/ ./core/
 COPY manage.py .
-COPY db.sqlite3 .
 
 # Expose Django port
 EXPOSE 8000
 
-# Run migrations and start backend server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Create DB, seed players, then start server
+CMD ["sh", "-c", "python manage.py migrate && python manage.py seed && python manage.py runserver 0.0.0.0:8000"]

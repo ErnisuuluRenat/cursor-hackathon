@@ -14,6 +14,7 @@ import MapScreen from "@/components/room/MapScreen";
 import ProfileScreen from "@/components/room/ProfileScreen";
 
 const USE_MOCKS = false;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
 
 const mockPlan = {
   packingList: ["Sunscreen", "Camera", "Passport"],
@@ -66,7 +67,7 @@ export default function Home() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8080/api/leaderboard/");
+        const response = await fetch(`${API_BASE}/api/leaderboard/`);
         if (response.ok) {
           const data = await response.json();
           setLeaderboard(Array.isArray(data) ? data : (data.players ?? []));
@@ -89,7 +90,7 @@ export default function Home() {
         setPlan(mockPlan);
         setEventScreen("plan");
       } else {
-        const response = await fetch("http://127.0.0.1:8080/api/plan/", {
+        const response = await fetch(`${API_BASE}/api/plan/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -124,7 +125,7 @@ export default function Home() {
         setVerdict(mockVerdict);
         setEventScreen("verdict");
       } else {
-        const response = await fetch("http://127.0.0.1:8080/api/verify/", {
+        const response = await fetch(`${API_BASE}/api/verify/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -142,7 +143,7 @@ export default function Home() {
         setEventScreen("verdict");
         
         // Auto-update stats and post score
-        await fetch("http://127.0.0.1:8080/api/score/", {
+        await fetch(`${API_BASE}/api/score/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -152,7 +153,7 @@ export default function Home() {
         });
 
         // Re-fetch leaderboard to reflect fresh ELO
-        const lbResponse = await fetch("http://127.0.0.1:8080/api/leaderboard/");
+        const lbResponse = await fetch(`${API_BASE}/api/leaderboard/`);
         if (lbResponse.ok) {
           const lbData = await lbResponse.json();
           setLeaderboard(Array.isArray(lbData) ? lbData : (lbData.players ?? []));
@@ -175,7 +176,7 @@ export default function Home() {
         setLeaderboard(mockLeaderboard);
         setActiveTab("scoreboard");
       } else {
-        const response = await fetch("http://127.0.0.1:8080/api/leaderboard/");
+        const response = await fetch(`${API_BASE}/api/leaderboard/`);
 
         if (!response.ok) {
           throw new Error(`Leaderboard request failed (${response.status})`);
