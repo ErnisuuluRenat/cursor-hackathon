@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -120,4 +121,34 @@ def score(request):
         return Response({'players': serialize_players()})
     except Exception as err:
         print('score error:', err)
+        return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def chat(request):
+    try:
+        messages = request.data.get('messages', [])
+
+        try:
+            import re
+            from .ai import call_claude_chat
+            from .planner import PLANNER_SYSTEM, extract_plan_from_message
+
+            reply = call_claude_chat(messages, PLANNER_SYSTEM)
+            plan_data = extract_plan_from_message(reply)
+
+            # Strip the <PLAN>...</PLAN> block and PLAN_READY from the visible reply
+            visible_reply = re.sub(r'<PLAN>[\s\S]*?<\/PLAN>', '', reply)
+            visible_reply = visible_reply.replace('PLAN_READY', '').strip()
+
+            return Response({'reply': visible_reply, 'plan': plan_data})
+        except Exception as err:
+            print('chat error:', err)
+            # Fallback when key is missing or request fails
+            return Response({
+                'reply': "I'd love to help you plan that adventure! What works best for your group's availability?",
+                'plan': None
+            })
+    except Exception as err:
+        print('chat error:', err)
         return Response({'error': 'Something went wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

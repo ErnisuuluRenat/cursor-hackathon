@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: summer-adventures-backend
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: always
+
+  frontend:
+    build:
+      context: ./summer-adventures-mvp
+      dockerfile: Dockerfile
+    container_name: summer-adventures-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      - backend
+    restart: always
