@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-export default function ProofScreen({ onProofReady }) {
+export default function ProofScreen({ onProofReady, t }) {
   const [activity, setActivity] = useState("");
   const [fileName, setFileName] = useState("");
   const fileInputRef = useRef(null);
@@ -23,14 +23,14 @@ export default function ProofScreen({ onProofReady }) {
 
   return (
     <div className="app-container">
-      <h1>Prove It!</h1>
+      <h1>{t("proofTitle")}</h1>
 
       <div className="input-group">
-        <label htmlFor="proof-activity">Activity name</label>
+        <label htmlFor="proof-activity">{t("proofActivityLabel")}</label>
         <input
           id="proof-activity"
           type="text"
-          placeholder="What did you do?"
+          placeholder={t("proofActivityPlaceholder")}
           value={activity}
           onChange={(e) => setActivity(e.target.value)}
         />
@@ -51,12 +51,12 @@ export default function ProofScreen({ onProofReady }) {
         onClick={() => fileInputRef.current?.click()}
         disabled={!activity.trim()}
       >
-        Upload Photo
+        {t("uploadPhotoBtn")}
       </button>
 
       {fileName && (
         <p style={{ fontSize: "0.875rem", marginBottom: 0, textAlign: "center" }}>
-          Selected: {fileName}
+          {t("selectedFile")} {fileName}
         </p>
       )}
     </div>

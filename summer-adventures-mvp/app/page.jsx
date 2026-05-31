@@ -6,6 +6,7 @@ import ProofScreen from "@/components/proof/ProofScreen";
 import VerdictCard from "@/components/proof/VerdictCard";
 import PlanView from "@/components/room/PlanView";
 import RoomScreen from "@/components/room/RoomScreen";
+import { translations } from "@/lib/translations";
 
 const USE_MOCKS = true;
 
@@ -53,6 +54,9 @@ export default function Home() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [language, setLanguage] = useState("ru");
+
+  const t = (key) => translations[language][key] || key;
 
   const handlePlanReady = async (activity, selectedMembers) => {
     setLoading(true);
@@ -84,7 +88,7 @@ export default function Home() {
         setScreen("plan");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate plan.");
+      setError(err instanceof Error ? err.message : t("errorPlanFailed"));
     } finally {
       setLoading(false);
     }
@@ -118,7 +122,7 @@ export default function Home() {
         setScreen("verdict");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify proof.");
+      setError(err instanceof Error ? err.message : t("errorVerifyFailed"));
     } finally {
       setLoading(false);
     }
@@ -146,7 +150,7 @@ export default function Home() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load leaderboard."
+        err instanceof Error ? err.message : t("errorLeaderboardFailed")
       );
     } finally {
       setLoading(false);
@@ -155,14 +159,54 @@ export default function Home() {
 
   return (
     <main
+      className="app-container"
       style={{
+        position: "relative",
+        width: "100%",
         minHeight: "100vh",
-        padding: "1rem",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
       }}
     >
+      <nav
+        style={{
+          position: "absolute",
+          top: "1rem",
+          right: "1rem",
+          display: "flex",
+          gap: "0.25rem",
+          fontSize: "0.8125rem",
+          fontWeight: 600,
+        }}
+      >
+        {[
+          { code: "ru", label: "RU" },
+          { code: "ky", label: "KG" },
+          { code: "en", label: "EN" },
+        ].map(({ code, label }, index) => (
+          <span key={code} style={{ display: "inline-flex", alignItems: "center" }}>
+            {index > 0 && (
+              <span style={{ margin: "0 0.25rem", color: "var(--text-muted)" }}>|</span>
+            )}
+            <button
+              type="button"
+              onClick={() => setLanguage(code)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                color: language === code ? "var(--primary)" : "var(--text-muted)",
+                fontWeight: language === code ? 700 : 600,
+                fontFamily: "inherit",
+                fontSize: "inherit",
+              }}
+            >
+              {label}
+            </button>
+          </span>
+        ))}
+      </nav>
+
+      <div style={{ paddingTop: "2rem" }}>
       {error && (
         <div
           className="app-container"
@@ -178,30 +222,32 @@ export default function Home() {
 
       {loading && screen !== "room" && (
         <div className="app-container">
-          <p style={{ textAlign: "center", margin: 0 }}>Loading...</p>
+          <p style={{ textAlign: "center", margin: 0 }}>{t("loading")}</p>
         </div>
       )}
 
-      {screen === "room" && <RoomScreen onPlanReady={handlePlanReady} />}
+      {screen === "room" && <RoomScreen onPlanReady={handlePlanReady} t={t} />}
 
       {screen === "plan" && !loading && (
-        <PlanView plan={plan} onNext={() => setScreen("proof")} />
+        <PlanView plan={plan} onNext={() => setScreen("proof")} t={t} />
       )}
 
       {screen === "proof" && !loading && (
-        <ProofScreen onProofReady={handleProofReady} />
+        <ProofScreen onProofReady={handleProofReady} t={t} />
       )}
 
       {screen === "verdict" && !loading && (
         <VerdictCard
           verdict={verdict}
           onViewLeaderboard={handleShowLeaderboard}
+          t={t}
         />
       )}
 
       {screen === "leaderboard" && !loading && (
-        <Leaderboard players={leaderboard} />
+        <Leaderboard players={leaderboard} t={t} />
       )}
+      </div>
     </main>
   );
 }

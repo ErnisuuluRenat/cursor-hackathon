@@ -9,7 +9,7 @@ const MOCK_FRIENDS = [
   { id: "4", name: "Riley" },
 ];
 
-export default function RoomScreen({ onPlanReady }) {
+export default function RoomScreen({ onPlanReady, t }) {
   const [activity, setActivity] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,14 +33,14 @@ export default function RoomScreen({ onPlanReady }) {
 
   return (
     <div className="app-container">
-      <h1>Plan Your Adventure</h1>
+      <h1>{t("roomTitle")}</h1>
 
       <div className="input-group">
-        <label htmlFor="activity">What do you want to do?</label>
+        <label htmlFor="activity">{t("roomActivityLabel")}</label>
         <input
           id="activity"
           type="text"
-          placeholder="e.g. Beach day, hiking, picnic..."
+          placeholder={t("roomActivityPlaceholder")}
           value={activity}
           onChange={(e) => setActivity(e.target.value)}
           disabled={loading}
@@ -49,7 +49,7 @@ export default function RoomScreen({ onPlanReady }) {
 
       <fieldset className="input-group" style={{ border: "none" }}>
         <legend style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-          Who&apos;s coming?
+          {t("roomWhoComing")}
         </legend>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
           {MOCK_FRIENDS.map((friend) => {
@@ -85,7 +85,7 @@ export default function RoomScreen({ onPlanReady }) {
         onClick={handleGeneratePlan}
         disabled={loading || !activity.trim()}
       >
-        {loading ? "Generating..." : "Generate Plan"}
+        {loading ? t("generatingPlanBtn") : t("generatePlanBtn")}
       </button>
     </div>
   );

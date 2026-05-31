@@ -1,0 +1,115 @@
+export const translations = {
+  ru: {
+    loading: "Загрузка...",
+    errorPlanFailed: "Не удалось создать план.",
+    errorVerifyFailed: "Не удалось проверить доказательство.",
+    errorLeaderboardFailed: "Не удалось загрузить таблицу лидеров.",
+
+    roomTitle: "Спланируйте приключение",
+    roomActivityLabel: "Что хотите сделать?",
+    roomActivityPlaceholder: "Например: поход на пляж, горный поход, пикник...",
+    roomWhoComing: "Кто идёт?",
+    generatePlanBtn: "Создать план",
+    generatingPlanBtn: "Создаём...",
+
+    planTitle: "Ваш план",
+    whatToBring: "Что взять с собой",
+    bestDay: "Лучший день",
+    steps: "Шаги",
+    weDidItBtn: "Мы сделали это!",
+
+    proofTitle: "Докажите это!",
+    proofActivityLabel: "Название активности",
+    proofActivityPlaceholder: "Что вы сделали?",
+    uploadPhotoBtn: "Загрузить фото",
+    selectedFile: "Выбрано:",
+
+    verified: "ПОДТВЕРЖДЕНО",
+    notVerified: "НЕ ПОДТВЕРЖДЕНО",
+    coolnessScore: "Рейтинг крутости",
+    seeLeaderboardBtn: "Смотреть таблицу лидеров",
+
+    leaderboardTitle: "Таблица лидеров",
+    rank: "Место",
+    player: "Игрок",
+    elo: "ELO",
+    adventures: "Приключения",
+    noPlayers: "Пока нет игроков.",
+  },
+
+  ky: {
+    loading: "Жүктөлүүдө...",
+    errorPlanFailed: "План түзүү мүмкүн болгон жок.",
+    errorVerifyFailed: "Далилди текшерүү мүмкүн болгон жок.",
+    errorLeaderboardFailed: "Лидерлер тизмесин жүктөө мүмкүн болгон жок.",
+
+    roomTitle: "Чыгармаңызды пландаңыз",
+    roomActivityLabel: "Эмне кылгыңыз келет?",
+    roomActivityPlaceholder: "Мисалы: пляжга баруу, тоого чыгуу, пикник...",
+    roomWhoComing: "Ким келет?",
+    generatePlanBtn: "План түзүү",
+    generatingPlanBtn: "Түзүлүүдө...",
+
+    planTitle: "Сиздин план",
+    whatToBring: "Эмне алуу керек",
+    bestDay: "Эң жакшы күн",
+    steps: "Кадамдар",
+    weDidItBtn: "Биз жасадык!",
+
+    proofTitle: "Далилдеңиз!",
+    proofActivityLabel: "Иш-аракеттин аталышы",
+    proofActivityPlaceholder: "Эмне кылдыңыз?",
+    uploadPhotoBtn: "Сүрөт жүктөө",
+    selectedFile: "Тандалды:",
+
+    verified: "ЫРАСТАЛДЫ",
+    notVerified: "ЫРАСТАЛГАН ЖОК",
+    coolnessScore: "Кереметтүүлүк упайы",
+    seeLeaderboardBtn: "Лидерлер тизмесин көрүү",
+
+    leaderboardTitle: "Лидерлер тизмеси",
+    rank: "Орун",
+    player: "Оюнчу",
+    elo: "ELO",
+    adventures: "Чыгармалар",
+    noPlayers: "Азырынча оюнчулар жок.",
+  },
+
+  en: {
+    loading: "Loading...",
+    errorPlanFailed: "Failed to generate plan.",
+    errorVerifyFailed: "Failed to verify proof.",
+    errorLeaderboardFailed: "Failed to load leaderboard.",
+
+    roomTitle: "Plan Your Adventure",
+    roomActivityLabel: "What do you want to do?",
+    roomActivityPlaceholder: "e.g. Beach day, hiking, picnic...",
+    roomWhoComing: "Who's coming?",
+    generatePlanBtn: "Generate Plan",
+    generatingPlanBtn: "Generating...",
+
+    planTitle: "Your Plan",
+    whatToBring: "What to Bring",
+    bestDay: "Best Day",
+    steps: "Steps",
+    weDidItBtn: "We Did It!",
+
+    proofTitle: "Prove It!",
+    proofActivityLabel: "Activity name",
+    proofActivityPlaceholder: "What did you do?",
+    uploadPhotoBtn: "Upload Photo",
+    selectedFile: "Selected:",
+
+    verified: "VERIFIED",
+    notVerified: "NOT VERIFIED",
+    coolnessScore: "Coolness Score",
+    seeLeaderboardBtn: "See Leaderboard",
+
+    leaderboardTitle: "Leaderboard",
+    rank: "Rank",
+    player: "Player",
+    elo: "ELO",
+    adventures: "Adventures",
+    noPlayers: "No players yet.",
+  },
+};

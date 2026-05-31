@@ -1,11 +1,11 @@
 "use client";
 
-export default function VerdictCard({ verdict, onViewLeaderboard }) {
+export default function VerdictCard({ verdict, onViewLeaderboard, t }) {
   if (!verdict) return null;
 
   const verified = verdict.verified;
   const statusColor = verified ? "#22c55e" : "#ef4444";
-  const statusLabel = verified ? "VERIFIED" : "NOT VERIFIED";
+  const statusLabel = verified ? t("verified") : t("notVerified");
 
   return (
     <div className="app-container">
@@ -43,7 +43,7 @@ export default function VerdictCard({ verdict, onViewLeaderboard }) {
             color: "var(--text-muted)",
           }}
         >
-          Coolness Score
+          {t("coolnessScore")}
         </p>
         <p
           style={{
@@ -60,7 +60,7 @@ export default function VerdictCard({ verdict, onViewLeaderboard }) {
       </div>
 
       <button type="button" className="cta-button" onClick={onViewLeaderboard}>
-        See Leaderboard
+        {t("seeLeaderboardBtn")}
       </button>
     </div>
   );

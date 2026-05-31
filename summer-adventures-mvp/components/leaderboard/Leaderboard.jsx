@@ -1,7 +1,7 @@
-export default function Leaderboard({ players = [] }) {
+export default function Leaderboard({ players = [], t }) {
   return (
     <div className="app-container">
-      <h1>Leaderboard</h1>
+      <h1>{t("leaderboardTitle")}</h1>
 
       <div style={{ overflowX: "auto", marginTop: "1rem" }}>
         <table
@@ -13,10 +13,10 @@ export default function Leaderboard({ players = [] }) {
         >
           <thead>
             <tr>
-              <th style={headerCellStyle}>Rank</th>
-              <th style={{ ...headerCellStyle, textAlign: "left" }}>Player</th>
-              <th style={headerCellStyle}>ELO</th>
-              <th style={headerCellStyle}>Adventures</th>
+              <th style={headerCellStyle}>{t("rank")}</th>
+              <th style={{ ...headerCellStyle, textAlign: "left" }}>{t("player")}</th>
+              <th style={headerCellStyle}>{t("elo")}</th>
+              <th style={headerCellStyle}>{t("adventures")}</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +80,7 @@ export default function Leaderboard({ players = [] }) {
 
         {players.length === 0 && (
           <p style={{ textAlign: "center", marginTop: "1rem", marginBottom: 0 }}>
-            No players yet.
+            {t("noPlayers")}
           </p>
         )}
       </div>
