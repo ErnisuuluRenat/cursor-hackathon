@@ -14,7 +14,11 @@ import MapScreen from "@/components/room/MapScreen";
 import ProfileScreen from "@/components/room/ProfileScreen";
 
 const USE_MOCKS = false;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "development"
+    ? "http://127.0.0.1:8080"
+    : "https://cursor-hackathon-q7mw.onrender.com");
 
 const mockPlan = {
   packingList: ["Sunscreen", "Camera", "Passport"],
